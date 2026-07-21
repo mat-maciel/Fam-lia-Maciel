@@ -80,9 +80,17 @@ revoke all on function public.festa_check_admin(text) from public;
 grant execute on function public.festa_save(text, jsonb, text) to anon, authenticated;
 grant execute on function public.festa_check_admin(text) to anon, authenticated;
 
--- 5) Realtime: todos veem as mudanças ao vivo.
---    (Se disser que a tabela já está na publicação, pode ignorar o erro.)
-alter publication supabase_realtime add table public.festas;
+-- 5) Realtime: todos veem as mudanças ao vivo. Idempotente — só adiciona a
+--    tabela à publicação se ela ainda não estiver lá (evita o erro 42710).
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'festas'
+  ) then
+    alter publication supabase_realtime add table public.festas;
+  end if;
+end $$;
 
 -- =============================================================================
 -- DEPOIS de rodar tudo acima, defina a senha do admin (ex.: compactador):
