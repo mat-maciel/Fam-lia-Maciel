@@ -93,6 +93,7 @@ begin
 end $$;
 
 -- =============================================================================
--- DEPOIS de rodar tudo acima, defina a senha do admin (ex.: compactador):
---     update public.app_config set value = 'compactador' where key = 'admin_pw';
+-- DEPOIS de rodar tudo acima, defina a senha do admin (escolha a SUA — e não
+-- comite essa senha em nenhum arquivo do repositório):
+--     update public.app_config set value = 'SUA_SENHA_ADMIN' where key = 'admin_pw';
 -- =============================================================================

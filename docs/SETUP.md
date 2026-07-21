@@ -22,8 +22,11 @@ Você faz isto **uma vez**. Depois é só usar.
    Ainda no SQL Editor, rode:
 
    ```sql
-   update public.app_config set value = 'compactador' where key = 'admin_pw';
+   update public.app_config set value = 'SUA_SENHA_ADMIN' where key = 'admin_pw';
    ```
+
+   Escolha uma senha e a use no lugar de `SUA_SENHA_ADMIN`. **Não coloque a senha
+   real em nenhum arquivo do repositório** — ela deve existir só aqui, no banco.
 
 5. Menu **Project Settings → API** e copie:
    - **Project URL** (ex.: `https://abcd1234.supabase.co`)
@@ -56,10 +59,10 @@ Em ~1 min o site fica em `https://<seu-usuario>.github.io/Fam-lia-Maciel/`.
 
 Na tela inicial: **código da festa** + **papel** (Administrador/Visualizador) +
 **senha**.
-- **Administrador** (senha `compactador`): cria a festa (botão "Criar nova
-  festa"), cadastra subfamílias, contagens por dia e despesas. Edita tudo.
-- **Visualizador** (senha `maciel`): entra com o código de uma festa existente e
-  **só acompanha** — a tela fica sem botões de edição.
+- **Administrador** (a senha que você definiu no passo 1.4): cria a festa (botão
+  "Criar nova festa"), cadastra subfamílias, contagens por dia e despesas. Edita tudo.
+- **Visualizador** (a senha `VIEWER_PW` do `config.js`): entra com o código de
+  uma festa existente e **só acompanha** — a tela fica sem botões de edição.
 
 Compartilhe **link + código + a senha do papel** com cada pessoa.
 
