@@ -51,6 +51,10 @@
   }
 
   *{box-sizing:border-box}
+  /* The `hidden` attribute must win over any component's own display rule
+     (screens and the modal backdrop set display:grid). Without this, an
+     invisible full-screen overlay stays in the layout and eats every click. */
+  [hidden]{display:none !important}
   html,body{margin:0;padding:0}
   body{background:var(--bg); color:var(--ink); font-family:var(--font-sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility}
   .num{font-variant-numeric:tabular-nums; letter-spacing:-.01em}
@@ -584,6 +588,15 @@
       }
       localStorage.setItem("caixaFesta:lastCode", code);
       saveCache(); subscribe(code); enterApp();
+    }).catch(function(err){
+      if(cached){
+        state = cached; localStorage.setItem("caixaFesta:lastCode", code);
+        subscribe(code); enterApp(); setSync("err"); toast("Offline — mostrando dados salvos");
+      } else {
+        $("joinErr").textContent = "Não foi possível conectar ao Supabase: " + ((err && err.message) || err) +
+          ". Confira se o schema.sql já foi executado e recarregue.";
+        currentCode = null;
+      }
     });
   }
 
