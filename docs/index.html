@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<meta name="description" content="Caixa e rateio da festa da Família Maciel — estilo Splitwise, sincronizado entre todos." />
+<title>Caixa da Festa · Família Maciel</title>
+
+<!-- Supabase JS SDK (permitido em hospedagem normal; bloqueado só dentro do sandbox de Artifact) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Configuração do projeto Supabase (preencha docs/config.js) -->
+<script src="config.js"></script>
+
+<style>
+  :root{
+    --bg:#F4F1EA; --surface:#FFFFFF; --surface-2:#FBF9F4; --surface-3:#F3EFE7;
+    --line:#E8E2D7; --line-strong:#D8D0C2;
+    --ink:#221D16; --muted:#6F6656; --muted-2:#9B9182;
+    --accent:#D9852B; --accent-strong:#BC6E18; --accent-soft:#FBEAD1; --accent-ink:#7A4A0E;
+    --good:#2E8B57; --good-soft:#E2F0E8; --good-ink:#1E6B41;
+    --bad:#C4392B; --bad-soft:#F8E5E2; --bad-ink:#96271C;
+    --shadow-sm:0 1px 2px rgba(34,29,22,.05);
+    --shadow:0 1px 2px rgba(34,29,22,.05), 0 8px 24px rgba(34,29,22,.06);
+    --radius:14px; --radius-sm:9px; --radius-xs:7px;
+    --font-sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --font-serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+    --font-mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#141210; --surface:#1D1A15; --surface-2:#232019; --surface-3:#2A2620;
+      --line:#2E2A22; --line-strong:#3B362C;
+      --ink:#F0EBE1; --muted:#A79D8C; --muted-2:#7C7365;
+      --accent:#EBA24A; --accent-strong:#F2B267; --accent-soft:#3A2E1B; --accent-ink:#F2B267;
+      --good:#54B683; --good-soft:#1D3227; --good-ink:#6FCF9B;
+      --bad:#E6725E; --bad-soft:#3A231F; --bad-ink:#F09580;
+      --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141210; --surface:#1D1A15; --surface-2:#232019; --surface-3:#2A2620;
+    --line:#2E2A22; --line-strong:#3B362C;
+    --ink:#F0EBE1; --muted:#A79D8C; --muted-2:#7C7365;
+    --accent:#EBA24A; --accent-strong:#F2B267; --accent-soft:#3A2E1B; --accent-ink:#F2B267;
+    --good:#54B683; --good-soft:#1D3227; --good-ink:#6FCF9B;
+    --bad:#E6725E; --bad-soft:#3A231F; --bad-ink:#F09580;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg); color:var(--ink); font-family:var(--font-sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility}
+  .num{font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+  ::selection{background:var(--accent-soft); color:var(--accent-ink)}
+  .wrap{max-width:1120px; margin:0 auto; padding:22px 22px 72px}
+
+  /* ---------- top bar ---------- */
+  .topbar{display:flex; align-items:flex-start; justify-content:space-between; gap:18px; flex-wrap:wrap; margin-bottom:20px}
+  .brand{display:flex; align-items:baseline; gap:12px; min-width:0}
+  .brand .mark{font-size:26px; line-height:1}
+  .titlecol{min-width:0}
+  .eyebrow{font-size:11.5px; text-transform:uppercase; letter-spacing:.16em; color:var(--muted); font-weight:600; margin:0 0 3px}
+  .festa-name{font-family:var(--font-serif); font-weight:700; font-size:27px; line-height:1.15; color:var(--ink); background:transparent; border:0; border-bottom:1.5px dashed transparent; padding:1px 2px; margin:-1px -2px; width:min(560px,72vw); text-wrap:balance}
+  .festa-name:hover{border-bottom-color:var(--line-strong)}
+  .festa-name:focus{outline:none; border-bottom-color:var(--accent)}
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end}
+  .metabar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:-6px 0 18px 38px}
+
+  .code-chip{display:inline-flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--line-strong); border-radius:99px; padding:5px 6px 5px 12px; font-size:12.5px; color:var(--muted)}
+  .code-chip b{color:var(--ink); font-family:var(--font-mono); font-size:12.5px; letter-spacing:.02em}
+  .code-chip button{border:0; background:var(--surface-2); color:var(--muted); width:26px; height:26px; border-radius:50%; display:grid; place-content:center; cursor:pointer}
+  .code-chip button:hover{color:var(--ink); background:var(--surface-3)}
+  .code-chip button svg{width:13px; height:13px}
+
+  .sync{display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--muted); padding:5px 11px; border-radius:99px; background:var(--surface-2); border:1px solid var(--line)}
+  .sync .dot{width:8px; height:8px; border-radius:50%; background:var(--muted-2)}
+  .sync.ok .dot{background:var(--good)}
+  .sync.saving .dot{background:var(--accent); animation:pulse 1s infinite}
+  .sync.err .dot{background:var(--bad)}
+  @keyframes pulse{50%{opacity:.35}}
+
+  /* ---------- buttons ---------- */
+  button{font-family:inherit; cursor:pointer}
+  .btn{display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 14px; border-radius:var(--radius-xs); border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); font-size:13.5px; font-weight:550; transition:background .15s ease, border-color .15s ease, transform .05s ease}
+  .btn:hover{background:var(--surface-2); border-color:var(--muted-2)}
+  .btn:active{transform:translateY(1px)}
+  .btn svg{width:15px; height:15px; opacity:.85}
+  .btn.ghost{background:transparent}
+  .btn.subtle{border-color:transparent; color:var(--muted)}
+  .btn.subtle:hover{color:var(--ink); background:var(--surface-2)}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#2a1a06; font-weight:600}
+  .btn.primary:hover{background:var(--accent-strong); border-color:var(--accent-strong)}
+  .btn.danger:hover{color:var(--bad); border-color:var(--bad)}
+  .icon-btn{width:38px; height:38px; padding:0; justify-content:center}
+  .btn:focus-visible, input:focus-visible, select:focus-visible, .festa-name:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  /* ---------- cards ---------- */
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm)}
+  .card-head{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px 0}
+  .card-title{font-size:13px; text-transform:uppercase; letter-spacing:.11em; color:var(--muted); font-weight:650; margin:0}
+  .card-body{padding:16px 18px 18px}
+
+  /* ---------- hero ---------- */
+  .hero{background:radial-gradient(120% 130% at 100% 0%, color-mix(in srgb,var(--accent) 12%, var(--surface)) 0%, var(--surface) 46%); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px 24px; margin-bottom:18px; display:grid; grid-template-columns:1.15fr 1fr; gap:26px; align-items:center}
+  .hero-main .label{font-size:12px; text-transform:uppercase; letter-spacing:.14em; color:var(--muted); font-weight:650; margin:0 0 6px}
+  .hero-saldo{font-size:46px; line-height:1; font-weight:750; letter-spacing:-.025em; margin:0}
+  .hero-saldo.neg{color:var(--bad)}
+  .hero-sub{margin:9px 0 0; color:var(--muted); font-size:13.5px}
+  .hero-sub b{color:var(--ink); font-weight:600}
+  .liquido{margin-top:4px; font-size:12.5px; color:var(--muted)}
+  .meta-row{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:8px}
+  .meta-row .k{font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); font-weight:600}
+  .meta-row .v{font-size:13px; color:var(--muted)}
+  .meta-row .v b{color:var(--ink)}
+  .bar{height:12px; border-radius:99px; background:var(--surface-3); overflow:hidden; border:1px solid var(--line)}
+  .bar > span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-strong)); border-radius:99px; transition:width .5s cubic-bezier(.2,.7,.2,1)}
+  .meta-mini{display:flex; gap:18px; margin-top:14px; flex-wrap:wrap}
+  .meta-mini .mk{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; display:block; margin-bottom:2px}
+  .meta-mini .mv{font-size:17px; font-weight:650}
+  .meta-edit{display:inline-flex; align-items:center; gap:6px}
+  .meta-edit input{width:120px; height:30px; padding:0 8px; text-align:right; border:1px solid var(--line-strong); border-radius:6px; background:var(--surface); color:var(--ink); font-family:inherit; font-size:13px}
+
+  /* ---------- grid ---------- */
+  .grid{display:grid; grid-template-columns:minmax(0,0.95fr) minmax(0,1.05fr); gap:18px; align-items:start}
+  .stack{display:flex; flex-direction:column; gap:18px}
+
+  /* ---------- form ---------- */
+  .seg{display:inline-flex; background:var(--surface-3); border-radius:9px; padding:3px; gap:2px; border:1px solid var(--line)}
+  .seg button{border:0; background:transparent; color:var(--muted); font-weight:600; font-size:13px; padding:6px 14px; border-radius:7px; transition:.15s}
+  .seg button[aria-selected="true"]{background:var(--surface); color:var(--ink); box-shadow:var(--shadow-sm)}
+  .seg button.exp[aria-selected="true"]{color:var(--accent-ink)}
+  .field{display:flex; flex-direction:column; gap:5px; margin-top:13px}
+  .field > label{font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  input[type=text], input[type=number], input[type=date], select{width:100%; height:40px; padding:0 11px; font-family:inherit; font-size:14.5px; background:var(--surface-2); color:var(--ink); border:1px solid var(--line-strong); border-radius:var(--radius-xs); transition:border-color .15s, background .15s}
+  input:focus, select:focus{outline:none; border-color:var(--accent); background:var(--surface)}
+  input::placeholder{color:var(--muted-2)}
+  .valor-wrap{position:relative}
+  .valor-wrap .cur{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:14px; pointer-events:none}
+  .valor-wrap input{padding-left:34px; font-variant-numeric:tabular-nums}
+  .chips{display:flex; flex-wrap:wrap; gap:7px}
+  .chk{display:inline-flex; align-items:center; gap:7px; padding:6px 11px 6px 9px; border:1px solid var(--line-strong); border-radius:99px; background:var(--surface-2); font-size:13px; cursor:pointer; user-select:none; transition:.12s}
+  .chk input{appearance:none; -webkit-appearance:none; width:15px; height:15px; margin:0; border:1.5px solid var(--muted-2); border-radius:5px; display:grid; place-content:center; cursor:pointer}
+  .chk input:checked{background:var(--accent); border-color:var(--accent)}
+  .chk input:checked::after{content:"✓"; font-size:10px; color:#2a1a06; font-weight:900}
+  .chk:has(input:checked){border-color:var(--accent); background:var(--accent-soft); color:var(--accent-ink)}
+  .split-actions{margin-top:7px}
+  .split-actions button{background:none; border:0; color:var(--accent-strong); font-size:12px; font-weight:600; cursor:pointer; padding:2px 4px}
+  .form-foot{display:flex; gap:10px; margin-top:16px; align-items:center}
+  .form-foot .btn.primary{flex:1; justify-content:center; height:42px}
+  .err{color:var(--bad); font-size:12.5px; min-height:16px; margin-top:8px; font-weight:500}
+
+  /* ---------- participantes ---------- */
+  .add-inline{display:flex; gap:8px; margin-bottom:6px}
+  .add-inline input{height:38px}
+  .plist{list-style:none; margin:14px 0 0; padding:0; display:flex; flex-direction:column; gap:4px}
+  .prow{padding:9px 4px 10px; border-top:1px solid var(--line)}
+  .prow:first-child{border-top:0}
+  .prow-top{display:flex; align-items:center; gap:10px}
+  .avatar{width:28px; height:28px; border-radius:50%; display:grid; place-content:center; font-size:12px; font-weight:700; color:#fff; flex:none}
+  .pname{font-weight:600; font-size:14.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .pbal{font-size:12.5px; font-weight:650; padding:3px 9px; border-radius:99px; white-space:nowrap; font-variant-numeric:tabular-nums}
+  .pbal.pos{background:var(--good-soft); color:var(--good-ink)}
+  .pbal.neg{background:var(--bad-soft); color:var(--bad-ink)}
+  .pbal.zero{background:var(--surface-3); color:var(--muted)}
+  .prow .del{margin-left:2px; border:0; background:none; color:var(--muted-2); width:24px; height:24px; border-radius:6px; display:grid; place-content:center; cursor:pointer; flex:none}
+  .prow .del:hover{color:var(--bad); background:var(--bad-soft)}
+  .prow .del svg{width:14px; height:14px}
+  .pmeter{display:flex; align-items:center; gap:9px; margin:7px 0 0 38px}
+  .pmeter .track{flex:1; height:6px; border-radius:99px; background:var(--surface-3); overflow:hidden}
+  .pmeter .track > span{display:block; height:100%; border-radius:99px; background:color-mix(in srgb,var(--accent) 55%, var(--surface-3))}
+  .pmeter .amt{font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; min-width:74px; text-align:right}
+
+  /* ---------- lançamentos ---------- */
+  .filters{display:flex; gap:6px}
+  .filters button{border:1px solid var(--line); background:var(--surface-2); color:var(--muted); font-size:12px; font-weight:600; padding:5px 11px; border-radius:99px; cursor:pointer; transition:.12s}
+  .filters button[aria-pressed="true"]{background:var(--ink); color:var(--surface); border-color:var(--ink)}
+  .llist{list-style:none; margin:14px 0 0; padding:0; display:flex; flex-direction:column}
+  .lrow{display:flex; align-items:center; gap:12px; padding:12px 4px; border-top:1px solid var(--line)}
+  .lrow:first-child{border-top:0}
+  .licon{width:34px; height:34px; border-radius:9px; display:grid; place-content:center; flex:none; font-size:15px}
+  .licon.in{background:var(--good-soft)}
+  .licon.out{background:var(--accent-soft)}
+  .linfo{flex:1; min-width:0}
+  .ldesc{font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .lmeta{font-size:12px; color:var(--muted); margin-top:1px; display:flex; gap:7px; flex-wrap:wrap; align-items:center}
+  .tag{background:var(--surface-3); border-radius:5px; padding:1px 6px; font-size:11px; color:var(--muted); font-weight:600}
+  .lval{font-weight:700; font-size:15px; font-variant-numeric:tabular-nums; white-space:nowrap}
+  .lval.in{color:var(--good)}
+  .lrow .del{border:0; background:none; color:var(--muted-2); width:26px; height:26px; border-radius:6px; display:grid; place-content:center; cursor:pointer; flex:none}
+  .lrow .del:hover{color:var(--bad); background:var(--bad-soft)}
+  .lrow .del svg{width:15px; height:15px}
+
+  /* ---------- acerto ---------- */
+  .acerto-grid{display:grid; grid-template-columns:1fr 1fr; gap:24px}
+  .sub{font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); font-weight:650; margin:0 0 12px}
+  .balgrid{display:flex; flex-direction:column; gap:8px}
+  .balrow{display:flex; align-items:center; gap:11px}
+  .balrow .pname{flex:1}
+  .balrow .state{font-size:11.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; min-width:70px; text-align:right}
+  .caixa-avatar{background:linear-gradient(135deg,var(--accent),var(--accent-strong))!important}
+  .transfers{display:flex; flex-direction:column; gap:9px}
+  .transfer{display:flex; align-items:center; gap:11px; background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-sm); padding:11px 13px}
+  .transfer .who{display:flex; align-items:center; gap:8px; font-weight:600; font-size:13.5px; min-width:0}
+  .transfer .who .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .transfer .arrow{color:var(--muted-2); flex:none}
+  .transfer .arrow svg{width:18px; height:18px; display:block}
+  .transfer .amt{margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap}
+  .pill-caixa{font-size:10px; background:var(--accent-soft); color:var(--accent-ink); padding:1px 6px; border-radius:5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em}
+  .allset{display:flex; align-items:center; gap:10px; color:var(--good-ink); background:var(--good-soft); border-radius:var(--radius-sm); padding:14px 16px; font-weight:600; font-size:14px}
+
+  .empty{text-align:center; color:var(--muted); padding:26px 16px; font-size:13.5px}
+  .empty .big{font-size:26px; margin-bottom:6px; opacity:.8}
+  .foot{margin-top:26px; text-align:center; color:var(--muted-2); font-size:12px; line-height:1.7}
+  .foot b{color:var(--muted)}
+
+  /* ---------- screens (setup / join) ---------- */
+  .screen{min-height:100vh; display:grid; place-items:center; padding:28px 20px}
+  .panel{width:100%; max-width:480px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:30px}
+  .panel .logo{font-size:34px; margin-bottom:10px}
+  .panel h1{font-family:var(--font-serif); font-size:26px; margin:0 0 6px; text-wrap:balance}
+  .panel p.lead{color:var(--muted); margin:0 0 20px; font-size:14.5px}
+  .panel label.fl{font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; display:block; margin-bottom:6px}
+  .panel .btn.primary{width:100%; justify-content:center; height:44px; margin-top:6px}
+  .divider{display:flex; align-items:center; gap:12px; color:var(--muted-2); font-size:12px; margin:18px 0}
+  .divider::before,.divider::after{content:""; height:1px; background:var(--line); flex:1}
+  .hint{font-size:12.5px; color:var(--muted); margin-top:16px; line-height:1.6}
+  .steps{margin:0; padding-left:20px; color:var(--muted); font-size:13.5px; line-height:1.7}
+  .steps code{background:var(--surface-3); padding:1px 6px; border-radius:5px; font-family:var(--font-mono); font-size:12px; color:var(--ink)}
+  .steps a{color:var(--accent-strong)}
+
+  /* ---------- toast ---------- */
+  .toast-wrap{position:fixed; left:0; right:0; bottom:22px; display:flex; justify-content:center; pointer-events:none; z-index:60; padding:0 16px}
+  .toast{pointer-events:auto; display:flex; align-items:center; gap:14px; background:var(--ink); color:var(--surface); padding:11px 15px; border-radius:11px; box-shadow:var(--shadow); font-size:13.5px; font-weight:500; max-width:440px; transform:translateY(20px); opacity:0; transition:.28s cubic-bezier(.2,.8,.2,1)}
+  .toast.show{transform:translateY(0); opacity:1}
+  .toast button{background:none; border:0; color:var(--accent); font-weight:700; font-size:13.5px; cursor:pointer; padding:2px 4px}
+
+  /* ---------- modal ---------- */
+  .modal-back{position:fixed; inset:0; background:rgba(20,16,10,.5); backdrop-filter:blur(2px); display:grid; place-items:center; z-index:80; padding:20px; opacity:0; transition:.18s}
+  .modal-back.show{opacity:1}
+  .modal{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); max-width:400px; width:100%; padding:22px; transform:scale(.96); transition:.18s}
+  .modal-back.show .modal{transform:scale(1)}
+  .modal h3{margin:0 0 8px; font-size:18px; font-family:var(--font-serif)}
+  .modal p{margin:0 0 18px; color:var(--muted); font-size:14px}
+  .modal-actions{display:flex; gap:10px; justify-content:flex-end}
+  .modal-actions .btn.danger{background:var(--bad); border-color:var(--bad); color:#fff}
+  .modal-actions .btn.danger:hover{filter:brightness(.94); color:#fff}
+
+  @media (max-width:880px){
+    .hero{grid-template-columns:1fr; gap:20px}
+    .grid{grid-template-columns:1fr}
+    .acerto-grid{grid-template-columns:1fr; gap:26px}
+    .hero-saldo{font-size:40px}
+  }
+  @media (max-width:520px){
+    .wrap{padding:18px 15px 60px}
+    .row2{grid-template-columns:1fr}
+    .festa-name{font-size:23px; width:100%}
+    .metabar{margin-left:0}
+    .panel{padding:24px}
+  }
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important; animation:none!important} }
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP (Supabase não configurado) ============ -->
+<div id="screen-setup" class="screen" hidden>
+  <div class="panel">
+    <div class="logo" aria-hidden="true">🔌</div>
+    <h1>Conecte ao Supabase</h1>
+    <p class="lead">O app está no ar, mas ainda não tem um banco de dados para sincronizar entre todos. Faça uma vez:</p>
+    <ol class="steps">
+      <li>Crie um projeto grátis em <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a>.</li>
+      <li>No <b>SQL Editor</b>, rode o script <code>docs/schema.sql</code> deste repositório.</li>
+      <li>Em <b>Project Settings → API</b>, copie a <code>Project URL</code> e a chave <code>anon public</code>.</li>
+      <li>Cole as duas em <code>docs/config.js</code> e faça commit.</li>
+    </ol>
+    <p class="hint" id="setupErr"></p>
+  </div>
+</div>
+
+<!-- ============ JOIN (escolher/criar festa) ============ -->
+<div id="screen-join" class="screen" hidden>
+  <div class="panel">
+    <div class="logo" aria-hidden="true">🎉</div>
+    <h1>Caixa da Festa</h1>
+    <p class="lead">Entre com o código da festa para ver o caixa compartilhado — ou crie uma nova festa.</p>
+    <form id="joinForm">
+      <label class="fl" for="joinCode">Código da festa</label>
+      <input id="joinCode" type="text" placeholder="ex.: maciel-7f3a9c" autocomplete="off" spellcheck="false" />
+      <button class="btn primary" type="submit">Entrar</button>
+    </form>
+    <div class="divider">ou</div>
+    <button class="btn" id="createFesta" style="width:100%; justify-content:center; height:44px">Criar nova festa</button>
+    <p class="hint">Quem tiver o código consegue ver e editar o caixa. Guarde-o com a família e evite compartilhar em público.</p>
+    <p class="hint" id="joinErr" style="color:var(--bad)"></p>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" hidden>
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">🎉</span>
+      <div class="titlecol">
+        <p class="eyebrow">Caixa &amp; rateio da festa</p>
+        <input class="festa-name" id="festaName" aria-label="Nome da festa" spellcheck="false" />
+      </div>
+    </div>
+    <div class="toolbar">
+      <span class="sync" id="sync"><span class="dot"></span><span id="syncTxt">Conectando…</span></span>
+      <button class="btn ghost icon-btn" id="btnTheme" title="Tema claro/escuro" aria-label="Alternar tema"></button>
+      <button class="btn ghost" id="btnExport" title="Baixar backup em JSON">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Backup
+      </button>
+      <button class="btn ghost" id="btnImport" title="Restaurar de um arquivo JSON">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+        Importar
+      </button>
+      <input type="file" id="fileInput" accept="application/json,.json" hidden />
+      <button class="btn subtle danger" id="btnReset" title="Apagar tudo desta festa">Limpar</button>
+    </div>
+  </header>
+
+  <div class="metabar">
+    <span class="code-chip">festa <b id="codeLabel">—</b>
+      <button id="copyCode" title="Copiar código" aria-label="Copiar código">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+      </button>
+    </span>
+    <button class="btn subtle" id="btnSwitch" style="height:32px; padding:0 10px; font-size:12.5px">Trocar festa</button>
+  </div>
+
+  <section class="hero" aria-label="Resumo do caixa">
+    <div class="hero-main">
+      <p class="label">Saldo do caixa</p>
+      <h2 class="hero-saldo num" id="heroSaldo">R$ 0,00</h2>
+      <p class="hero-sub">Arrecadado <b id="hAr" class="num">R$ 0,00</b> &nbsp;·&nbsp; Gasto pelo caixa <b id="hGc" class="num">R$ 0,00</b></p>
+      <p class="liquido" id="hLiquido" hidden></p>
+    </div>
+    <div class="meta-block">
+      <div class="meta-row">
+        <span class="k">Meta de arrecadação</span>
+        <span class="meta-edit">R$ <input id="metaInput" type="number" min="0" step="10" class="num" aria-label="Meta de arrecadação" /></span>
+      </div>
+      <div class="bar"><span id="metaBar" style="width:0%"></span></div>
+      <div class="meta-row" style="margin-top:8px; margin-bottom:0">
+        <span class="v" id="metaPct">—</span>
+        <span class="v" id="metaLeft"></span>
+      </div>
+      <div class="meta-mini">
+        <div class="mi"><span class="mk">Gasto total</span><span class="mv num" id="mGasto">R$ 0,00</span></div>
+        <div class="mi"><span class="mk">Lançamentos</span><span class="mv num" id="mCount">0</span></div>
+        <div class="mi"><span class="mk">Pessoas</span><span class="mv num" id="mPeople">0</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <div class="stack">
+      <section class="card">
+        <div class="card-head">
+          <h3 class="card-title">Novo lançamento</h3>
+          <div class="seg" role="tablist" aria-label="Tipo de lançamento">
+            <button id="tabContrib" role="tab" aria-selected="true">Contribuição</button>
+            <button id="tabDespesa" class="exp" role="tab" aria-selected="false">Despesa</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <form id="lancForm" autocomplete="off">
+            <div id="fContrib">
+              <div class="field"><label for="cPessoa">Quem contribuiu</label><select id="cPessoa"></select></div>
+            </div>
+            <div id="fDespesa" hidden>
+              <div class="field"><label for="dPagoPor">Pago por</label><select id="dPagoPor"></select></div>
+              <div class="field"><label for="dCategoria">Categoria</label>
+                <select id="dCategoria"><option>Comida</option><option>Bebida</option><option>Decoração</option><option>Local</option><option>Música</option><option>Bolo &amp; doces</option><option>Outros</option></select>
+              </div>
+              <div class="field"><label>Dividir entre</label>
+                <div class="chips" id="dSplit"></div>
+                <div class="split-actions"><button type="button" id="splitAll">Todos</button> · <button type="button" id="splitNone">Ninguém</button></div>
+              </div>
+            </div>
+            <div class="row2">
+              <div class="field"><label for="valor">Valor</label>
+                <div class="valor-wrap"><span class="cur">R$</span><input id="valor" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" /></div>
+              </div>
+              <div class="field"><label for="data">Data</label><input id="data" type="date" /></div>
+            </div>
+            <div class="field"><label for="desc" id="descLabel">Descrição</label><input id="desc" type="text" maxlength="60" placeholder="Ex.: Churrasco, refrigerantes…" /></div>
+            <div class="err" id="formErr" role="alert"></div>
+            <div class="form-foot"><button type="submit" class="btn primary" id="submitBtn">Adicionar contribuição</button></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h3 class="card-title">Participantes</h3><span id="pTotal" style="font-size:12px; color:var(--muted); font-weight:600"></span></div>
+        <div class="card-body">
+          <form class="add-inline" id="addPersonForm">
+            <input id="newPerson" type="text" maxlength="28" placeholder="Adicionar pessoa…" aria-label="Nome da nova pessoa" />
+            <button class="btn" type="submit">Adicionar</button>
+          </form>
+          <ul class="plist" id="plist"></ul>
+        </div>
+      </section>
+    </div>
+
+    <div class="stack">
+      <section class="card">
+        <div class="card-head"><h3 class="card-title">Lançamentos</h3>
+          <div class="filters" id="filters" role="group" aria-label="Filtrar lançamentos">
+            <button data-f="all" aria-pressed="true">Todos</button>
+            <button data-f="contribuicao" aria-pressed="false">Entradas</button>
+            <button data-f="despesa" aria-pressed="false">Saídas</button>
+          </div>
+        </div>
+        <div class="card-body"><ul class="llist" id="llist"></ul></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="card" style="margin-top:18px">
+    <div class="card-head"><h3 class="card-title">Acerto de contas</h3></div>
+    <div class="card-body">
+      <div class="acerto-grid">
+        <div><p class="sub">Saldo de cada um</p><div class="balgrid" id="balgrid"></div></div>
+        <div><p class="sub">Como acertar (menos transferências)</p><div class="transfers" id="transfers"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot"><b>Caixa da Festa · Família Maciel.</b><br/>Dados sincronizados via Supabase. Quem tiver o código da festa acessa o mesmo caixa de qualquer lugar.</p>
+</div>
+</div>
+
+<div class="toast-wrap"><div class="toast" id="toast" role="status" aria-live="polite"></div></div>
+<div class="modal-back" id="modalBack" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 id="modalTitle"></h3><p id="modalBody"></p>
+    <div class="modal-actions"><button class="btn ghost" id="modalCancel">Cancelar</button><button class="btn danger" id="modalOk">Confirmar</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var CAIXA = "__caixa__";
+  var moneyFmt = new Intl.NumberFormat("pt-BR", {style:"currency", currency:"BRL"});
+  var AVATAR_COLORS = ["#D9852B","#2E8B57","#3A6EA5","#B0477A","#8A5FC0","#C4392B","#0E8E8E","#B4791A"];
+  var $ = function(id){ return document.getElementById(id); };
+
+  // ---------- utils ----------
+  function money(v){ return moneyFmt.format(v || 0); }
+  function round2(v){ return Math.round((v + Number.EPSILON) * 100) / 100; }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function fmtDate(iso){ if(!iso) return ""; var p=String(iso).split("-"); return p.length===3? p[2]+"/"+p[1] : iso; }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function initials(name){ var p=String(name).trim().split(/\s+/).filter(Boolean); if(!p.length) return "?"; return (p[0][0]+(p.length>1?p[p.length-1][0]:"")).toUpperCase(); }
+  function colorFor(id){ var h=0; for(var i=0;i<id.length;i++){ h=(h*31+id.charCodeAt(i))>>>0; } return AVATAR_COLORS[h % AVATAR_COLORS.length]; }
+
+  // ---------- theme ----------
+  function applyThemeBtn(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    var dark = cur ? cur==="dark" : matchMedia("(prefers-color-scheme:dark)").matches;
+    $("btnTheme").textContent = dark ? "☀️" : "🌙";
+  }
+  function initTheme(){ var s=localStorage.getItem("caixaFesta:theme"); if(s) document.documentElement.setAttribute("data-theme", s); }
+  $("btnTheme") && ($("btnTheme").onclick=function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    var dark = cur ? cur==="dark" : matchMedia("(prefers-color-scheme:dark)").matches;
+    var next = dark ? "light":"dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("caixaFesta:theme", next); applyThemeBtn();
+  });
+
+  // ---------- config / supabase ----------
+  var cfg = window.CAIXA_CONFIG || {};
+  var configured = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY &&
+    !/COLE_|SUA_|xxxx|<.*>/i.test(cfg.SUPABASE_URL + cfg.SUPABASE_ANON_KEY));
+  var sb = null, currentCode = null, channel = null, appliedAt = null;
+
+  // ---------- state ----------
+  var state = emptyState();
+  var ui = { tipo:"contribuicao", filter:"all", split:{}, splitTouched:false };
+
+  function emptyState(){ return { version:1, festa:"Festa da Família Maciel", meta:0, participantes:[], lancamentos:[] }; }
+  function normalize(s){
+    s = s || {};
+    return {
+      version:1,
+      festa: typeof s.festa==="string" ? s.festa : "Festa da Família Maciel",
+      meta: typeof s.meta==="number" ? s.meta : 0,
+      participantes: Array.isArray(s.participantes) ? s.participantes : [],
+      lancamentos: Array.isArray(s.lancamentos) ? s.lancamentos : []
+    };
+  }
+  function cleanState(){ return normalize(state); }
+
+  // ---------- local cache (offline / snappy) ----------
+  function cacheKey(){ return "caixaFesta:cache:"+currentCode; }
+  function saveCache(){ try{ localStorage.setItem(cacheKey(), JSON.stringify(state)); }catch(e){} }
+  function loadCache(){ try{ var r=localStorage.getItem(cacheKey()); return r? normalize(JSON.parse(r)) : null; }catch(e){ return null; } }
+
+  // ============ SYNC LAYER ============
+  function setSync(kind, txt){
+    var el=$("sync"); el.className="sync "+kind;
+    $("syncTxt").textContent = txt || ({ok:"Sincronizado", saving:"Salvando…", err:"Sem conexão", "":"Conectando…"}[kind] || "");
+  }
+
+  var saveTimer=null, saving=false, dirty=false;
+  function scheduleSave(){ dirty=true; saveCache(); renderSync(); clearTimeout(saveTimer); saveTimer=setTimeout(flushSave, 500); }
+  function renderSync(){ if(dirty||saving) setSync("saving"); }
+
+  function flushSave(){
+    if(!sb || !currentCode){ return; }
+    if(saving) return;
+    saving=true; dirty=false; setSync("saving");
+    var payload = { code:currentCode, data:cleanState(), updated_at:new Date().toISOString() };
+    sb.from("festas").upsert(payload).select().single().then(function(res){
+      saving=false;
+      if(res.error){ setSync("err"); dirty=true; setTimeout(flushSave, 2500); return; }
+      if(res.data){ appliedAt = res.data.updated_at; }
+      setSync(dirty?"saving":"ok");
+      if(dirty) scheduleSave();
+    });
+  }
+
+  function applyRemote(row){
+    if(!row) return;
+    if(row.updated_at && row.updated_at === appliedAt) return;       // our own echo
+    var incoming = normalize(row.data);
+    if(JSON.stringify(incoming) === JSON.stringify(cleanState())){    // no real change
+      appliedAt = row.updated_at; return;
+    }
+    if(saving || dirty) return;   // don't clobber a pending local edit; our write will win/merge next
+    appliedAt = row.updated_at;
+    state = incoming; saveCache();
+    if(document.activeElement !== $("festaName")) $("festaName").value = state.festa;
+    if(document.activeElement !== $("metaInput")) $("metaInput").value = state.meta || "";
+    renderAll();
+    toast("Atualizado por outra pessoa");
+  }
+
+  function subscribe(code){
+    if(channel){ try{ sb.removeChannel(channel); }catch(e){} channel=null; }
+    channel = sb.channel("festa:"+code)
+      .on("postgres_changes", { event:"*", schema:"public", table:"festas", filter:"code=eq."+code }, function(payload){
+        applyRemote(payload.new);
+      })
+      .subscribe();
+  }
+
+  function joinFesta(code){
+    code = String(code||"").trim().toLowerCase().replace(/[^a-z0-9\-]/g,"");
+    if(!code){ return; }
+    $("joinErr").textContent = "";
+    currentCode = code;
+    setSync("", "Conectando…");
+    var cached = loadCache();
+    sb.from("festas").select("*").eq("code", code).maybeSingle().then(function(res){
+      if(res.error){
+        if(cached){
+          state = cached; localStorage.setItem("caixaFesta:lastCode", code);
+          subscribe(code); enterApp(); setSync("err"); toast("Offline — mostrando dados salvos");
+        } else {
+          $("joinErr").textContent = "Erro ao conectar: " + res.error.message; currentCode = null;
+        }
+        return;
+      }
+      if(res.data){
+        appliedAt = res.data.updated_at; state = normalize(res.data.data);
+      } else {
+        state = cached || emptyState();
+        sb.from("festas").upsert({ code:code, data:cleanState(), updated_at:new Date().toISOString() }).select().single()
+          .then(function(r){ if(r.data) appliedAt = r.data.updated_at; });
+      }
+      localStorage.setItem("caixaFesta:lastCode", code);
+      saveCache(); subscribe(code); enterApp();
+    });
+  }
+
+  function leaveFesta(){
+    if(channel){ try{ sb.removeChannel(channel); }catch(e){} channel=null; }
+    currentCode=null; appliedAt=null;
+    localStorage.removeItem("caixaFesta:lastCode");
+    $("app").hidden=true; $("screen-join").hidden=false;
+    $("joinCode").value=""; $("joinCode").focus();
+  }
+
+  // ============ CORE COMPUTATION (Caixa como participante → soma zero) ============
+  function compute(){
+    var ids={}; state.participantes.forEach(function(p){ ids[p.id]=true; });
+    var paid={}, owed={}, contrib={};
+    state.participantes.forEach(function(p){ paid[p.id]=0; owed[p.id]=0; contrib[p.id]=0; });
+    paid[CAIXA]=0; owed[CAIXA]=0;
+    var arrecadado=0, gastoTotal=0, gastoCaixa=0, reembolsos=0;
+    state.lancamentos.forEach(function(l){
+      if(l.tipo==="contribuicao"){
+        if(!ids[l.participanteId]) return;
+        paid[l.participanteId]+=l.valor; owed[CAIXA]+=l.valor; contrib[l.participanteId]+=l.valor; arrecadado+=l.valor;
+      } else if(l.tipo==="despesa"){
+        var payer=l.pagoPor;
+        if(payer!==CAIXA && !ids[payer]) return;
+        paid[payer]+=l.valor; gastoTotal+=l.valor;
+        if(payer===CAIXA){ gastoCaixa+=l.valor; } else { reembolsos+=l.valor; }
+        var membros=(l.entre||[]).filter(function(id){ return ids[id]; });
+        if(membros.length){ var share=l.valor/membros.length; membros.forEach(function(m){ owed[m]+=share; }); }
+        else { owed[CAIXA]+=l.valor; }
+      }
+    });
+    var balance={}; Object.keys(paid).forEach(function(id){ balance[id]=round2(paid[id]-owed[id]); });
+    return { contrib:contrib, balance:balance, arrecadado:round2(arrecadado), gastoTotal:round2(gastoTotal),
+      gastoCaixa:round2(gastoCaixa), reembolsos:round2(reembolsos), saldoCaixa:round2(arrecadado-gastoCaixa) };
+  }
+  function settle(balance){
+    var creditors=[], debtors=[];
+    Object.keys(balance).forEach(function(id){ var b=balance[id]; if(b>0.005) creditors.push({id:id,amt:b}); else if(b<-0.005) debtors.push({id:id,amt:-b}); });
+    creditors.sort(function(a,b){ return b.amt-a.amt; }); debtors.sort(function(a,b){ return b.amt-a.amt; });
+    var out=[], i=0, j=0;
+    while(i<debtors.length && j<creditors.length){
+      var pay=Math.min(debtors[i].amt, creditors[j].amt);
+      out.push({from:debtors[i].id, to:creditors[j].id, valor:round2(pay)});
+      debtors[i].amt-=pay; creditors[j].amt-=pay;
+      if(debtors[i].amt<0.005) i++; if(creditors[j].amt<0.005) j++;
+    }
+    return out;
+  }
+  function nomeOf(id){ if(id===CAIXA) return "Caixa"; var p=state.participantes.find(function(x){ return x.id===id; }); return p?p.nome:"—"; }
+
+  // ============ RENDER ============
+  function renderAll(){
+    var c=compute();
+    renderHero(c); renderForm(); renderParticipantes(c); renderLancamentos(); renderAcerto(c);
+    $("festaName").value = state.festa;
+    $("codeLabel").textContent = currentCode || "—";
+  }
+  function renderHero(c){
+    var el=$("heroSaldo"); el.textContent=money(c.saldoCaixa); el.className="hero-saldo num "+(c.saldoCaixa<-0.005?"neg":"pos");
+    $("hAr").textContent=money(c.arrecadado); $("hGc").textContent=money(c.gastoCaixa);
+    var liq=$("hLiquido");
+    if(c.reembolsos>0.005){ liq.hidden=false; liq.innerHTML="− "+money(c.reembolsos)+" em reembolsos a quem pagou do próprio bolso &nbsp;·&nbsp; <b style='color:var(--ink)'>"+money(round2(c.saldoCaixa-c.reembolsos))+" líquido</b>"; }
+    else liq.hidden=true;
+    var meta=state.meta||0;
+    var pct = meta>0 ? Math.min(100,(c.arrecadado/meta)*100) : (c.arrecadado>0?100:0);
+    $("metaBar").style.width=pct.toFixed(1)+"%";
+    if(document.activeElement!==$("metaInput")) $("metaInput").value = meta||"";
+    $("metaPct").innerHTML = meta>0 ? "<b style='color:var(--ink)'>"+Math.round(pct)+"%</b> da meta" : "sem meta definida";
+    var left=meta-c.arrecadado;
+    $("metaLeft").textContent = meta>0 ? (left>0?"faltam "+money(left):"meta atingida 🎉") : "";
+    $("mGasto").textContent=money(c.gastoTotal); $("mCount").textContent=state.lancamentos.length; $("mPeople").textContent=state.participantes.length;
+  }
+  function fillSelect(sel, includeCaixa){
+    var opts = includeCaixa ? '<option value="'+CAIXA+'">💰 Caixa (vaquinha)</option>' : "";
+    state.participantes.forEach(function(p){ opts += '<option value="'+p.id+'">'+esc(p.nome)+'</option>'; });
+    var prev=sel.value; sel.innerHTML=opts;
+    if(prev){ var o=sel.querySelector('option[value="'+prev.replace(/"/g,'\\"')+'"]'); if(o) sel.value=prev; }
+  }
+  function renderForm(){
+    var isC = ui.tipo==="contribuicao";
+    $("tabContrib").setAttribute("aria-selected", isC); $("tabDespesa").setAttribute("aria-selected", !isC);
+    $("fContrib").hidden=!isC; $("fDespesa").hidden=isC;
+    $("submitBtn").textContent = isC ? "Adicionar contribuição" : "Adicionar despesa";
+    $("descLabel").innerHTML = isC ? 'Descrição <span style="text-transform:none;color:var(--muted-2)">(opcional)</span>' : 'Descrição';
+    $("desc").placeholder = isC ? "Ex.: Vaquinha, Pix da tia…" : "Ex.: Churrasco, refrigerantes…";
+    var none = state.participantes.length===0;
+    $("submitBtn").disabled=none; $("submitBtn").style.opacity=none?.5:1;
+    fillSelect($("cPessoa"), false); fillSelect($("dPagoPor"), true); renderSplit();
+  }
+  function renderSplit(){
+    var box=$("dSplit");
+    if(state.participantes.length===0){ box.innerHTML='<span style="color:var(--muted);font-size:13px">Adicione participantes primeiro.</span>'; return; }
+    if(!ui.splitTouched){ state.participantes.forEach(function(p){ if(!(p.id in ui.split)) ui.split[p.id]=true; }); }
+    var html=""; state.participantes.forEach(function(p){ var on=ui.split[p.id]!==false; html+='<label class="chk"><input type="checkbox" data-sid="'+p.id+'"'+(on?" checked":"")+'>'+esc(p.nome)+'</label>'; });
+    box.innerHTML=html;
+  }
+  function renderParticipantes(c){
+    var list=$("plist"); $("pTotal").textContent=state.participantes.length+" pessoa"+(state.participantes.length===1?"":"s");
+    if(state.participantes.length===0){ list.innerHTML='<div class="empty"><div class="big">👥</div>Adicione as pessoas que participam da festa.</div>'; return; }
+    var maxC=0; state.participantes.forEach(function(p){ maxC=Math.max(maxC, c.contrib[p.id]||0); });
+    var html="";
+    state.participantes.forEach(function(p){
+      var bal=c.balance[p.id]||0; var cls=bal>0.005?"pos":(bal<-0.005?"neg":"zero");
+      var label=bal>0.005?"+"+money(bal):(bal<-0.005?"−"+money(-bal):"quitado");
+      var w=maxC>0?((c.contrib[p.id]||0)/maxC*100):0;
+      html+='<li class="prow"><div class="prow-top">'+
+        '<span class="avatar" style="background:'+colorFor(p.id)+'">'+esc(initials(p.nome))+'</span>'+
+        '<span class="pname" title="'+esc(p.nome)+'">'+esc(p.nome)+'</span>'+
+        '<span class="pbal '+cls+'" title="Saldo no acerto">'+label+'</span>'+
+        '<button class="del" data-del-person="'+p.id+'" title="Remover" aria-label="Remover '+esc(p.nome)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>'+
+        '</div><div class="pmeter"><div class="track"><span style="width:'+w.toFixed(1)+'%"></span></div><span class="amt">'+money(c.contrib[p.id]||0)+'</span></div></li>';
+    });
+    list.innerHTML=html;
+  }
+  function delBtn(id){ return '<button class="del" data-del-lanc="'+id+'" title="Excluir" aria-label="Excluir lançamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>'; }
+  function renderLancamentos(){
+    var list=$("llist");
+    var items=state.lancamentos.slice().sort(function(a,b){ if(a.data!==b.data) return (a.data<b.data)?1:-1; return 0; });
+    if(ui.filter!=="all") items=items.filter(function(l){ return l.tipo===ui.filter; });
+    if(items.length===0){ list.innerHTML='<div class="empty"><div class="big">🧾</div>'+(state.lancamentos.length===0?"Nenhum lançamento ainda.<br>Registre a primeira contribuição ao lado.":"Nada neste filtro.")+'</div>'; return; }
+    var html="";
+    items.forEach(function(l){
+      if(l.tipo==="contribuicao"){
+        html+='<li class="lrow"><span class="licon in" aria-hidden="true">↓</span><div class="linfo"><div class="ldesc">'+esc(l.descricao||"Contribuição")+'</div><div class="lmeta"><span>'+esc(nomeOf(l.participanteId))+'</span><span class="tag">contribuição</span><span>'+fmtDate(l.data)+'</span></div></div><span class="lval in num">+'+money(l.valor)+'</span>'+delBtn(l.id)+'</li>';
+      } else {
+        var pagador=l.pagoPor===CAIXA?"Caixa":nomeOf(l.pagoPor);
+        var nMemb=(l.entre||[]).filter(function(id){ return state.participantes.some(function(p){return p.id===id;}); }).length;
+        html+='<li class="lrow"><span class="licon out" aria-hidden="true">↑</span><div class="linfo"><div class="ldesc">'+esc(l.descricao||l.categoria||"Despesa")+'</div><div class="lmeta"><span class="tag">'+esc(l.categoria||"Outros")+'</span><span>pago por '+esc(pagador)+'</span><span>÷ '+nMemb+'</span><span>'+fmtDate(l.data)+'</span></div></div><span class="lval out num">−'+money(l.valor)+'</span>'+delBtn(l.id)+'</li>';
+      }
+    });
+    list.innerHTML=html;
+  }
+  function whoChip(id){
+    if(id===CAIXA) return '<span class="who"><span class="avatar caixa-avatar">💰</span><span class="nm">Caixa</span><span class="pill-caixa">vaquinha</span></span>';
+    return '<span class="who"><span class="avatar" style="background:'+colorFor(id)+'">'+esc(initials(nomeOf(id)))+'</span><span class="nm">'+esc(nomeOf(id))+'</span></span>';
+  }
+  function renderAcerto(c){
+    var bg=$("balgrid");
+    if(state.participantes.length===0){ bg.innerHTML='<div class="empty" style="padding:14px">Sem participantes.</div>'; }
+    else {
+      var html="";
+      state.participantes.forEach(function(p){
+        var b=c.balance[p.id]||0; var cls=b>0.005?"pos":(b<-0.005?"neg":"zero");
+        var st=b>0.005?"a receber":(b<-0.005?"deve":"quitado");
+        var amt=b>0.005?"+"+money(b):(b<-0.005?"−"+money(-b):money(0));
+        html+='<div class="balrow"><span class="avatar" style="background:'+colorFor(p.id)+'">'+esc(initials(p.nome))+'</span><span class="pname" title="'+esc(p.nome)+'">'+esc(p.nome)+'</span><span class="pbal '+cls+' num">'+amt+'</span><span class="state">'+st+'</span></div>';
+      });
+      bg.innerHTML=html;
+    }
+    var tf=$("transfers"); var transfers=settle(c.balance);
+    if(transfers.length===0){ tf.innerHTML='<div class="allset"><span aria-hidden="true">✓</span> Tudo certo — ninguém deve nada.</div>'; return; }
+    var h2="";
+    transfers.forEach(function(t){ h2+='<div class="transfer">'+whoChip(t.from)+'<span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>'+whoChip(t.to)+'<span class="amt num">'+money(t.valor)+'</span></div>'; });
+    tf.innerHTML=h2;
+  }
+
+  // ============ MUTATIONS ============
+  function commit(){ renderAll(); scheduleSave(); }
+
+  function addLancamento(e){
+    e.preventDefault(); var err=$("formErr"); err.textContent="";
+    var valor=round2(parseFloat($("valor").value)); var data=$("data").value||todayISO(); var desc=$("desc").value.trim();
+    if(!valor||valor<=0){ err.textContent="Informe um valor maior que zero."; $("valor").focus(); return; }
+    if(ui.tipo==="contribuicao"){
+      var pid=$("cPessoa").value; if(!pid){ err.textContent="Escolha quem contribuiu."; return; }
+      state.lancamentos.push({id:uid(), tipo:"contribuicao", data:data, participanteId:pid, valor:valor, descricao:desc}); toast("Contribuição adicionada");
+    } else {
+      var membros=state.participantes.filter(function(p){ return ui.split[p.id]!==false; }).map(function(p){ return p.id; });
+      if(membros.length===0){ err.textContent="Escolha ao menos uma pessoa para dividir a despesa."; return; }
+      state.lancamentos.push({id:uid(), tipo:"despesa", data:data, valor:valor, descricao:desc, categoria:$("dCategoria").value, pagoPor:$("dPagoPor").value, entre:membros}); toast("Despesa adicionada");
+    }
+    $("valor").value=""; $("desc").value=""; commit(); $("valor").focus();
+  }
+  function removeLancamento(id){
+    var idx=state.lancamentos.findIndex(function(l){ return l.id===id; }); if(idx<0) return;
+    var removed=state.lancamentos.splice(idx,1)[0]; commit();
+    toast("Lançamento excluído", function(){ state.lancamentos.splice(Math.min(idx,state.lancamentos.length),0,removed); commit(); });
+  }
+  function addPerson(e){
+    e.preventDefault(); var inp=$("newPerson"); var nome=inp.value.trim(); if(!nome) return;
+    if(state.participantes.some(function(p){ return p.nome.toLowerCase()===nome.toLowerCase(); })){ toast("Já existe alguém com esse nome"); return; }
+    var id=uid(); state.participantes.push({id:id,nome:nome}); if(ui.splitTouched) ui.split[id]=true;
+    inp.value=""; commit(); inp.focus();
+  }
+  function removePerson(id){
+    var used=state.lancamentos.some(function(l){ return l.participanteId===id||l.pagoPor===id||(l.entre&&l.entre.indexOf(id)>=0); });
+    if(used){ toast("Essa pessoa tem lançamentos — exclua-os antes"); return; }
+    var idx=state.participantes.findIndex(function(p){ return p.id===id; }); if(idx<0) return;
+    var removed=state.participantes.splice(idx,1)[0]; delete ui.split[id]; commit();
+    toast("Participante removido", function(){ state.participantes.splice(idx,0,removed); commit(); });
+  }
+
+  // ============ TOAST / MODAL ============
+  var toastTimer=null;
+  function toast(msg, onUndo){
+    var el=$("toast"); el.innerHTML="";
+    var span=document.createElement("span"); span.textContent=msg; el.appendChild(span);
+    if(onUndo){ var b=document.createElement("button"); b.textContent="Desfazer"; b.onclick=function(){ clearTimeout(toastTimer); hideToast(); onUndo(); }; el.appendChild(b); }
+    el.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(hideToast, onUndo?6000:2600);
+  }
+  function hideToast(){ $("toast").classList.remove("show"); }
+  var modalCb=null;
+  function confirmModal(title, body, okLabel, cb){
+    $("modalTitle").textContent=title; $("modalBody").textContent=body; $("modalOk").textContent=okLabel||"Confirmar"; modalCb=cb;
+    var back=$("modalBack"); back.hidden=false; requestAnimationFrame(function(){ back.classList.add("show"); }); $("modalCancel").focus();
+  }
+  function closeModal(){ var back=$("modalBack"); back.classList.remove("show"); setTimeout(function(){ back.hidden=true; },180); modalCb=null; }
+
+  // ============ EXPORT / IMPORT ============
+  function doExport(){
+    var payload=JSON.stringify(cleanState(), null, 2); var fname="caixa-festa-"+(currentCode||"")+"-"+todayISO()+".json";
+    try{ var blob=new Blob([payload],{type:"application/json"}); var url=URL.createObjectURL(blob); var a=document.createElement("a"); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(url); },1500); toast("Backup gerado"); }
+    catch(e){ toast("Não foi possível exportar"); }
+  }
+  function doImport(file){
+    var reader=new FileReader();
+    reader.onload=function(){
+      try{
+        var s=JSON.parse(reader.result);
+        if(!s||!Array.isArray(s.participantes)||!Array.isArray(s.lancamentos)) throw 0;
+        confirmModal("Importar backup?", "Isso substitui os dados desta festa (para todos) pelos do arquivo.", "Importar", function(){
+          state=normalize(s); ui.split={}; ui.splitTouched=false; commit(); toast("Backup importado");
+        });
+      }catch(e){ toast("Arquivo inválido"); }
+    };
+    reader.readAsText(file);
+  }
+
+  // ============ WIRING ============
+  $("tabContrib").onclick=function(){ ui.tipo="contribuicao"; $("formErr").textContent=""; renderForm(); };
+  $("tabDespesa").onclick=function(){ ui.tipo="despesa"; $("formErr").textContent=""; renderForm(); };
+  $("lancForm").addEventListener("submit", addLancamento);
+  $("addPersonForm").addEventListener("submit", addPerson);
+  $("dSplit").addEventListener("change", function(e){ var cb=e.target.closest("input[data-sid]"); if(!cb) return; ui.splitTouched=true; ui.split[cb.getAttribute("data-sid")]=cb.checked; });
+  $("splitAll").onclick=function(){ ui.splitTouched=true; state.participantes.forEach(function(p){ ui.split[p.id]=true; }); renderSplit(); };
+  $("splitNone").onclick=function(){ ui.splitTouched=true; state.participantes.forEach(function(p){ ui.split[p.id]=false; }); renderSplit(); };
+  $("plist").addEventListener("click", function(e){ var b=e.target.closest("[data-del-person]"); if(b) removePerson(b.getAttribute("data-del-person")); });
+  $("llist").addEventListener("click", function(e){ var b=e.target.closest("[data-del-lanc]"); if(b) removeLancamento(b.getAttribute("data-del-lanc")); });
+  $("filters").addEventListener("click", function(e){ var b=e.target.closest("button[data-f]"); if(!b) return; ui.filter=b.getAttribute("data-f"); Array.prototype.forEach.call($("filters").children, function(btn){ btn.setAttribute("aria-pressed", btn===b); }); renderLancamentos(); });
+  $("festaName").addEventListener("input", function(){ state.festa=this.value; scheduleSave(); });
+  $("festaName").addEventListener("blur", function(){ if(!this.value.trim()){ this.value=state.festa="Festa da Família Maciel"; scheduleSave(); } });
+  $("festaName").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); this.blur(); } });
+  $("metaInput").addEventListener("input", function(){ var v=parseFloat(this.value); state.meta=(!v||v<0)?0:round2(v); renderHero(compute()); scheduleSave(); });
+  $("btnExport").onclick=doExport;
+  $("btnReset").onclick=function(){ confirmModal("Limpar esta festa?", "Isso apaga participantes e lançamentos desta festa para TODOS que usam este código. Não dá para desfazer.", "Limpar tudo", function(){ state=emptyState(); ui.split={}; ui.splitTouched=false; ui.filter="all"; commit(); toast("Festa zerada"); }); };
+  $("btnSwitch").onclick=function(){ confirmModal("Trocar de festa?", "Você vai voltar para a tela inicial. Os dados desta festa continuam salvos na nuvem.", "Trocar", function(){ leaveFesta(); }); };
+  $("copyCode").onclick=function(){ if(!currentCode) return; navigator.clipboard && navigator.clipboard.writeText(currentCode); toast("Código copiado — compartilhe com a família"); };
+  $("btnImport").onclick=function(){ $("fileInput").click(); };
+  $("fileInput").addEventListener("change", function(){ if(this.files[0]){ doImport(this.files[0]); this.value=""; } });
+  $("modalCancel").onclick=closeModal;
+  $("modalOk").onclick=function(){ var cb=modalCb; closeModal(); if(cb) cb(); };
+  $("modalBack").addEventListener("click", function(e){ if(e.target===this) closeModal(); });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape" && !$("modalBack").hidden) closeModal(); });
+
+  // join screen
+  $("joinForm").addEventListener("submit", function(e){ e.preventDefault(); joinFesta($("joinCode").value); });
+  $("createFesta").onclick=function(){ var code="maciel-"+Math.random().toString(36).slice(2,8); joinFesta(code); };
+
+  function enterApp(){
+    $("screen-setup").hidden=true; $("screen-join").hidden=true; $("app").hidden=false;
+    $("data").value=todayISO(); setSync("ok"); applyThemeBtn(); renderAll();
+  }
+
+  // ============ BOOT ============
+  initTheme(); applyThemeBtn();
+  if(!configured){
+    $("screen-setup").hidden=false;
+    if(!window.supabase){ $("setupErr").textContent="(O SDK do Supabase não carregou — verifique a conexão.)"; }
+    return;
+  }
+  if(!window.supabase){ $("screen-setup").hidden=false; $("setupErr").textContent="O SDK do Supabase não carregou. Verifique a conexão de internet e recarregue."; return; }
+  sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  var last = localStorage.getItem("caixaFesta:lastCode");
+  if(last){ joinFesta(last); } else { $("screen-join").hidden=false; $("joinCode").focus(); }
+})();
+</script>
+</body>
+</html>
