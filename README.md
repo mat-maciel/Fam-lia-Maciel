@@ -18,6 +18,9 @@ Como funciona o rateio:
 - 💰 As **contribuições/pagamentos** ao caixa abatem o que cada um deve; o app
   mostra um único **"falta pagar / a receber"** por responsável e o **saldo do
   caixa**. (Invariante: a soma dos saldos = saldo do caixa.)
+- 🔐 **Dois papéis com senha**: **administrador** (edita — senha no servidor) e
+  **visualizador** (só acompanha). A edição é bloqueada no banco (RLS + função
+  `festa_save`); só o admin grava.
 - 🔄 Tudo compartilhado via **Supabase**; hospedado grátis no **GitHub Pages**.
 
 ## Rodar / publicar
@@ -36,6 +39,6 @@ pasta `/docs`.
 | Arquivo | O quê |
 |---|---|
 | `docs/index.html` | O app inteiro (HTML + CSS + JS, sem build). |
-| `docs/config.js` | Onde vão a URL e a chave pública do seu Supabase. |
-| `docs/schema.sql` | Tabela + regras de acesso (RLS) + realtime. O estado é um JSON versionado nessa tabela — não muda ao evoluir o modelo do app. |
+| `docs/config.js` | URL + chave pública do Supabase e a senha do visualizador. |
+| `docs/schema.sql` | Tabela + RLS + realtime + funções de escrita/login (senha do admin fica no banco). O estado é um JSON versionado na tabela. |
 | `docs/SETUP.md` | Passo a passo de publicação. |
