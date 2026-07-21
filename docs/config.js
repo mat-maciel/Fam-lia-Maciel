@@ -10,6 +10,6 @@
 // Nunca coloque aqui a chave "service_role".
 // -----------------------------------------------------------------------------
 window.CAIXA_CONFIG = {
-  SUPABASE_URL: "COLE_A_PROJECT_URL_AQUI",
-  SUPABASE_ANON_KEY: "COLE_A_ANON_PUBLIC_KEY_AQUI"
+  SUPABASE_URL: "https://ckwbggslmqhozidahroe.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_rKkOeexP5m72NFqnBmxnlw_lUagnchu"
 };
