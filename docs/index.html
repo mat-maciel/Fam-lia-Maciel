@@ -754,19 +754,6 @@
     balance[CAIXA] = round2(-sumSaldo);
     return { per:per, bySf:bySf, balance:balance, entradas:round2(entradas), gastoTotal:round2(gastoTotal), gastoCaixa:round2(gastoCaixa), saldoCaixa:round2(entradas-gastoCaixa), totalDevido:round2(totalDevido), naoRateado:round2(naoRateado) };
   }
-  function settle(balance){
-    var creditors=[], debtors=[];
-    Object.keys(balance).forEach(function(id){ var b=balance[id]; if(b>0.005) creditors.push({id:id,amt:b}); else if(b<-0.005) debtors.push({id:id,amt:-b}); });
-    creditors.sort(function(a,b){ return b.amt-a.amt; }); debtors.sort(function(a,b){ return b.amt-a.amt; });
-    var out=[], i=0, j=0;
-    while(i<debtors.length && j<creditors.length){
-      var pay=Math.min(debtors[i].amt, creditors[j].amt);
-      out.push({from:debtors[i].id, to:creditors[j].id, valor:round2(pay)});
-      debtors[i].amt-=pay; creditors[j].amt-=pay;
-      if(debtors[i].amt<0.005) i++; if(creditors[j].amt<0.005) j++;
-    }
-    return out;
-  }
   function nomeOf(id){ if(id===CAIXA) return "Caixa"; var s=state.subfamilias.find(function(x){ return x.id===id; }); return s?s.nome:"—"; }
 
   // ============ RENDER ============
@@ -869,6 +856,9 @@
     if(id===CAIXA) return '<span class="who"><span class="avatar caixa-avatar">💰</span><span class="nm">Caixa</span><span class="pill-caixa">vaquinha</span></span>';
     return '<span class="who"><span class="avatar" style="background:'+colorFor(id)+'">'+esc(initials(nomeOf(id)))+'</span><span class="nm">'+esc(nomeOf(id))+'</span></span>';
   }
+  function transferRow(from, to, valor){
+    return '<div class="transfer">'+whoChip(from)+'<span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>'+whoChip(to)+'<span class="amt num">'+money(valor)+'</span></div>';
+  }
   function renderRateio(c){
     var wrap=$("rateioWrap");
     var warn = c.naoRateado>0.005 ? '<div class="warn">⚠️ '+money(c.naoRateado)+' não foi rateado: há despesa alocada num dia sem ninguém presente (ou chopp num dia sem bebedores). Ajuste as contagens ou a alocação por dia.</div>' : '';
@@ -885,9 +875,18 @@
     });
     var foot='<tfoot><tr><td>Total</td><td>'+fmtU(t.ug)+' / '+fmtU(t.uc)+'</td><td>'+money(t.dg)+'</td><td>'+money(t.dc)+'</td><td>'+money(t.dev)+'</td><td>'+money(t.pago)+'</td><td></td></tr></tfoot>';
     var table='<div class="tablewrap"><table class="data rtable"><thead><tr><th>Responsável</th><th>Un. g/🍺</th><th>Devido geral</th><th>Devido chopp</th><th>Devido</th><th>Pago</th><th>Situação</th></tr></thead><tbody>'+body+'</tbody>'+foot+'</table></div>';
-    var transfers=settle(c.balance), sug;
-    if(transfers.length){
-      sug='<p class="sub" style="margin-top:18px">Como acertar</p><div class="transfers">'+transfers.map(function(tr){ return '<div class="transfer">'+whoChip(tr.from)+'<span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>'+whoChip(tr.to)+'<span class="amt num">'+money(tr.valor)+'</span></div>'; }).join("")+'</div>';
+    var pagam=[], recebem=[];
+    state.subfamilias.forEach(function(sf){
+      var s=c.bySf[sf.id].saldo;
+      if(s < -0.005) pagam.push({ id:sf.id, valor:round2(-s) });
+      else if(s > 0.005) recebem.push({ id:sf.id, valor:round2(s) });
+    });
+    pagam.sort(function(a,b){ return b.valor-a.valor; }); recebem.sort(function(a,b){ return b.valor-a.valor; });
+    var sug;
+    if(pagam.length || recebem.length){
+      sug='<p class="legend" style="margin:16px 0 0">Cada responsável acerta só com o caixa — ninguém paga direto a outra pessoa.</p>';
+      if(pagam.length){ sug+='<p class="sub" style="margin-top:14px">Pagar ao caixa</p><div class="transfers">'+pagam.map(function(x){ return transferRow(x.id, CAIXA, x.valor); }).join("")+'</div>'; }
+      if(recebem.length){ sug+='<p class="sub" style="margin-top:16px">Receber do caixa</p><div class="transfers">'+recebem.map(function(x){ return transferRow(CAIXA, x.id, x.valor); }).join("")+'</div>'; }
     } else { sug='<div class="allset" style="margin-top:14px"><span aria-hidden="true">✓</span> Todo mundo quitado.</div>'; }
     wrap.innerHTML = warn + table + sug;
   }
